@@ -1,4 +1,4 @@
-/* San Francisco flat routes -- the explorer page (everything on screen).
+/* Seattle flat routes -- the explorer page (everything on screen).
  * Depends on engine.js. */
 "use strict";
 
@@ -162,7 +162,7 @@ const App = {
   /* ---------------------------------------------------------------- map */
   buildMap() {
     const map = L.map("map", {
-      preferCanvas: true, center: [37.762, -122.437], zoom: 12,
+      preferCanvas: true, center: [47.615, -122.335], zoom: 12,
       minZoom: 10, maxZoom: 18, zoomControl: true,
     });
     this._fitCity = () => {
@@ -336,8 +336,8 @@ const App = {
       return this.nodeGrid.nearest(p[0], p[1],
         i => (this.graph.nodeFlags[i] & bit) !== 0);
     };
-    this.state.src = pick("Mission");
-    this.state.dst = pick("Outer Sunset");
+    this.state.src = pick("Fremont");
+    this.state.dst = pick("Broadway");
   },
 
   weights() {
@@ -505,7 +505,7 @@ Object.assign(App, {
       oSel.appendChild(new Option(n, n));
       dSel.appendChild(new Option(n, n));
     }
-    oSel.value = "Mission"; dSel.value = "Outer Sunset";
+    oSel.value = "Fremont"; dSel.value = "Broadway";
     const setFrom = (sel, which) => {
       const name = sel.value;
       if (!name) return;

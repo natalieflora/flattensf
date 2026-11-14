@@ -36,6 +36,10 @@ from .config import PROCESSED_DIR, SF_BBOX
 from .download import ADDRESSES_PARQUET, BASE_PARQUETS, PLACES_PARQUET
 from .utils import get_logger, step
 
+#: Mid-latitude of the study area, and metres per degree of longitude there.
+_MID_LAT = (SF_BBOX[2] + SF_BBOX[3]) / 2
+_M_PER_DEG_LON = 111320 * float(np.cos(np.radians(_MID_LAT)))
+
 log = get_logger("sf_flat_routes.places")
 
 HILLSHADE_PNG = PROCESSED_DIR / "hillshade_light.png"
@@ -45,16 +49,20 @@ HILLSHADE_PNG = PROCESSED_DIR / "hillshade_light.png"
 CATEGORY_GROUPS = {
     "park": ["park", "garden", "playground", "beach", "dog_park", "hiking_trail",
              "scenic_point", "nature_preserve", "botanical_garden", "national_park",
-             "state_park", "plaza", "picnic_ground"],
+             "state_park", "plaza", "picnic_ground", "public_plaza"],
     "landmark": ["landmark_and_historical_building", "monument", "tourist_attraction",
                  "museum", "art_museum", "history_museum", "science_museum",
                  "aquarium", "zoo", "stadium_arena", "observatory", "lighthouse",
                  "historical_site", "memorial", "pier", "marina", "amusement_park",
                  "theatre", "performing_arts_theatre", "concert_hall", "cinema",
-                 "library", "public_library"],
+                 "library", "public_library",
+                 # names from Overture's 2026 taxonomy
+                 "theatre_venue", "movie_theater", "music_venue", "stadium",
+                 "baseball_stadium", "football_stadium", "soccer_stadium"],
     "transit": ["train_station", "light_rail_station", "subway_station",
                 "bus_station", "ferry_terminal", "transit_station", "cable_car_station",
-                "metro_station", "public_transportation"],
+                "metro_station", "public_transportation",
+                "light_rail_and_subway_station", "ferry_service"],
     "school": ["school", "university", "college_university", "high_school",
                "elementary_school", "middle_school", "community_college", "campus"],
     "civic": ["city_hall", "courthouse", "post_office", "hospital", "fire_station",
@@ -66,7 +74,8 @@ CATEGORY_GROUPS = {
              "dessert_shop", "tea_room", "wine_bar", "cocktail_bar", "food_court"],
     "shop": ["grocery_store", "supermarket", "bookstore", "shopping_center",
              "hardware_store", "bicycle_shop", "pharmacy", "farmers_market",
-             "convenience_store", "department_store", "record_store", "florist"],
+             "convenience_store", "department_store", "record_store", "florist",
+             "shopping_mall", "bike_store", "vinyl_record_store"],
     "lodging": ["hotel", "hostel", "bed_and_breakfast"],
 }
 _GROUP_OF = {c: g for g, cs in CATEGORY_GROUPS.items() for c in cs}
@@ -144,28 +153,28 @@ def _support(names: pd.Series, lon: np.ndarray, lat: np.ndarray,
             for dy in (-1, 0, 1):
                 for j in grid.get((cx + dx, cy + dy), ()):
                     o = low[j]
-                    if o != n and n in o and abs(all_lon[j] - x) * 88000 < radius_m \
+                    if o != n and n in o and abs(all_lon[j] - x) * _M_PER_DEG_LON < radius_m \
                             and abs(all_lat[j] - y) * 111000 < radius_m:
                         out[k] += 1
     return out
 
 
-_CITY_SUFFIXES = {"sf", "san francisco", "san francisco ca", "sf ca", "ca",
-                  "san francisco california", "california", "usa"}
-# 'X San Francisco' and 'X SF' are city suffixes even without a comma;
-# a bare trailing 'California' or 'CA' only after one ('Cafe California').
+_CITY_SUFFIXES = {"seattle", "seattle wa", "wa", "seattle washington",
+                  "washington", "usa"}
+# 'X Seattle' is a city suffix even without a comma; a bare trailing
+# 'Washington' or 'WA' only after one ('Washington Park').
 _CORE_RE = re.compile(
-    r"(?:[\s,\-/]+(?:san francisco|sf)(?:[\s,]+(?:ca|california|usa))?"
-    r"|[,\-/]\s*(?:ca|california|usa))\s*$", re.I)
+    r"(?:[\s,\-/]+seattle(?:[\s,]+(?:wa|washington|usa))?"
+    r"|[,\-/]\s*(?:wa|washington|usa))\s*$", re.I)
 
 
 def _core(name: str) -> str:
-    """'Dolores Park, San Francisco' -> 'dolores park'."""
+    """'Gas Works Park, Seattle' -> 'gas works park'."""
     return _CORE_RE.sub("", str(name)).strip().lower()
 
 
 def _prune_variants(df: pd.DataFrame, radius_m: float = 500.0) -> pd.DataFrame:
-    """Drop 'Dolores Park, San Francisco' when 'Dolores Park' is 200 m away.
+    """Drop 'Gas Works Park, Seattle' when 'Dolores Park' is 200 m away.
 
     The places feed carries many user-typed variants of the same name. A
     record is dropped when a better-supported kept name is a prefix of it
@@ -188,14 +197,14 @@ def _prune_variants(df: pd.DataFrame, radius_m: float = 500.0) -> pd.DataFrame:
             # (a branch, a sub-area) only when it is close by
             rest = n[len(k):].strip(" ,-/()").lower()
             if rest in _CITY_SUFFIXES:
-                r = 6000.0                       # 'X, San Francisco' anywhere
+                r = 6000.0                       # 'X, Seattle' anywhere
             elif groups[i] != groups[j]:
                 continue                         # 'Dolores Park Cafe' is a cafe
             elif support[j] >= 3 and support[i] == 0:
                 r = 6000.0                       # a same-kind variant of a well-known name
             else:
                 r = radius_m
-            if (abs(lon[i] - lon[j]) * 88000 < r
+            if (abs(lon[i] - lon[j]) * _M_PER_DEG_LON < r
                     and abs(lat[i] - lat[j]) * 111000 < r):
                 dup = True
                 break
@@ -245,7 +254,8 @@ def build_places() -> dict:
     base = build_base()
     t = pq.read_table(PLACES_PARQUET).to_pandas()
     names = t["names"].map(lambda n: (n or {}).get("primary") if isinstance(n, dict) else None)
-    cats = t["categories"].map(lambda c: (c or {}).get("primary") if isinstance(c, dict) else None)
+    cat_col = "taxonomy" if "taxonomy" in t.columns else "categories"
+    cats = t[cat_col].map(lambda c: (c or {}).get("primary") if isinstance(c, dict) else None)
     conf = pd.to_numeric(t["confidence"], errors="coerce").fillna(0)
     import shapely
     geom = shapely.from_wkb(t["geometry"].values)
@@ -355,10 +365,10 @@ def build_hillshade(width_px: int = 1600) -> dict:
         dem = np.where(np.isfinite(dem) & (dem != nod) & (dem > -50), dem, np.nan)
         valid = np.isfinite(dem)
         filled = np.where(valid, dem, np.nanmedian(dem))
-        px_m = abs(transform.a) * 111320 * np.cos(np.radians(37.76))
+        px_m = abs(transform.a) * 111320 * np.cos(np.radians(_MID_LAT))
         hs = hillshade(filled, res=px_m, z_factor=1.8)
         shade = (0.72 + 0.28 * hs)[..., None]
-        tint = np.clip(filled / 260, 0, 1)[..., None]
+        tint = np.clip(filled / 170, 0, 1)[..., None]
         base = np.array([243, 242, 238], float); dark = np.array([196, 194, 186], float)
         rgb = (base * (1 - tint * 0.45) + dark * (tint * 0.45)) * shade
         img = np.zeros((h2, w2, 4), np.uint8)

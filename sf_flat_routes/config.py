@@ -24,13 +24,16 @@ OUTPUT_DIR = Path(_RUN_DIR) / "outputs" if _RUN_DIR else PROJECT_ROOT / "outputs
 #: The route finder as a static site, deployed to GitHub Pages from here.
 SITE_DIR = Path(_RUN_DIR) / "site" if _RUN_DIR else PROJECT_ROOT / "site"
 #: The product is "flattensf"; the Python package keeps its older name.
-PRODUCT_NAME = "Flatten SF"
-REPO_URL = "https://github.com/almostimplemented/flattensf"
+PRODUCT_NAME = "Flatten Seattle"
+#: Seattle port of almostimplemented/flattensf, served on nataliewalls.com.
+REPO_URL = "https://github.com/natalieflora/flattensf"
+UPSTREAM_URL = "https://github.com/almostimplemented/flattensf"
 #: The host the site answers on. Pages serves the custom domain on www and
 #: redirects the apex to it, so links, the canonical URL and the social
 #: preview image all use www; the CNAME file carries the same host.
-SITE_DOMAIN = "www.flattensf.com"
-SITE_URL = f"https://{SITE_DOMAIN}/"
+SITE_DOMAIN = "nataliewalls.com"
+SITE_PATH = "/flatsea/"
+SITE_URL = f"https://{SITE_DOMAIN}{SITE_PATH}"
 
 for _d in (RAW_DIR, PROCESSED_DIR, OUTPUT_DIR):
     _d.mkdir(parents=True, exist_ok=True)
@@ -41,7 +44,7 @@ for _d in (RAW_DIR, PROCESSED_DIR, OUTPUT_DIR):
 #: Geographic CRS of the source vector data (Overture) and of all map output.
 CRS_GEOGRAPHIC = "EPSG:4326"
 #: Projected CRS used for *every* length, slope and distance computation.
-#: NAD83 / UTM zone 10N -- the native CRS of the USGS 3DEP 1 m tiles for SF,
+#: NAD83 / UTM zone 10N -- the native CRS of the USGS 3DEP 1 m tiles for Seattle,
 #: so elevation sampling needs no reprojection of the raster.
 CRS_PROJECTED = "EPSG:26910"
 
@@ -49,14 +52,13 @@ CRS_PROJECTED = "EPSG:26910"
 # Study area
 # --------------------------------------------------------------------------
 #: Analysis bounding box (lon_min, lon_max, lat_min, lat_max).
-#: Covers the City & County of San Francisco land area plus a small margin.
-#: Deliberately excludes the Marin headlands and the Farallones.
-SF_BBOX = (-122.5200, -122.3300, 37.6950, 37.8350)
+#: Covers the City of Seattle land area plus a small margin (the name is
+#: kept from the San Francisco original to keep the fork's diff small).
+SF_BBOX = (-122.4400, -122.2300, 47.4900, 47.7400)
 
-#: Treasure Island / Yerba Buena Island are part of SF but are only reachable
-#: via the Bay Bridge (no pedestrian access to the western span) so they are
-#: excluded from neighborhood-pair routing.
-EXCLUDED_NEIGHBORHOODS = ("Treasure Island/YBI",)
+#: Seattle's neighborhoods are all reachable on foot, so none is excluded
+#: from neighborhood-pair routing.
+EXCLUDED_NEIGHBORHOODS: tuple[str, ...] = ()
 
 # --------------------------------------------------------------------------
 # Elevation sampling / smoothing

@@ -37,7 +37,7 @@ ADDRESSES_PARQUET = RAW_DIR / "overture_addresses_sf.parquet"
 BASE_PARQUETS = {typ: RAW_DIR / f"overture_{typ}_sf.parquet"
                  for typ in ("land_use", "infrastructure", "land")}
 NEIGHBORHOODS_GEOJSON = RAW_DIR / "sf_neighborhoods.geojson"
-DEM_13_TIF = RAW_DIR / "dem_13_n38w123.tif"
+DEM_13_TIF = RAW_DIR / "dem_13_n48w123.tif"
 
 #: Columns pulled from the Overture segment table. Everything unused is left
 #: on the server -- the nested route/destination columns are large.
@@ -47,7 +47,9 @@ SEGMENT_COLUMNS = [
     "level_rules", "geometry", "bbox", "sources",
 ]
 CONNECTOR_COLUMNS = ["id", "geometry", "bbox"]
-PLACE_COLUMNS = ["id", "names", "categories", "confidence", "geometry", "bbox"]
+#: Overture renamed ``categories`` to ``taxonomy`` (same ``primary`` field)
+#: in its 2026 schema; the 2026-10-21.0 release used here has ``taxonomy``.
+PLACE_COLUMNS = ["id", "names", "taxonomy", "confidence", "geometry", "bbox"]
 ADDRESS_COLUMNS = ["id", "number", "street", "unit", "postcode", "geometry", "bbox"]
 BASE_COLUMNS = ["id", "names", "subtype", "class", "geometry", "bbox"]
 

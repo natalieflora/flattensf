@@ -15,3 +15,7 @@ __pycache__/
 .venv/
 
 data/sensitivity/
+
+# Seattle port: analysis outputs are regenerable and not committed; only the
+# built route finder in site/ is (the blog fetches it from there).
+outputs/

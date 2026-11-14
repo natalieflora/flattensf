@@ -1,4 +1,4 @@
-"""Publication-quality static map: San Francisco's low-elevation backbone.
+"""Publication-quality static map: Seattle's low-elevation backbone.
 
 The map answers one question -- *which streets form San Francisco's
 low-elevation transportation backbone?* -- so the visual hierarchy is built
@@ -203,7 +203,7 @@ def make_backbone_map(corridors, edges, neighborhoods, passes=None,
         for sp in ax.spines.values():
             sp.set_visible(False)
 
-        ax.set_title("San Francisco's low-elevation backbone",
+        ax.set_title("Seattle's low-elevation backbone",
                      fontsize=21, fontweight="bold", color="#14202b",
                      loc="left", pad=16)
         ax.text(0.0, 1.006,
@@ -234,7 +234,7 @@ def make_backbone_map(corridors, edges, neighborhoods, passes=None,
         ax.text(0.995, -0.018,
                 "Street network: Overture Maps (OpenStreetMap, ODbL)  ·  "
                 "Elevation: USGS 3DEP 1 m lidar  ·  "
-                "Neighborhoods: SF Planning / DataSF",
+                "Neighborhoods: City of Seattle (click_that_hood)",
                 transform=ax.transAxes, fontsize=6.4, color="#6a747d",
                 ha="right", va="top")
 
@@ -301,7 +301,7 @@ def make_grade_map(edges, neighborhoods, mode: str = "walk"):
         ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
         for sp in ax.spines.values():
             sp.set_visible(False)
-        ax.set_title("San Francisco street gradients", fontsize=19,
+        ax.set_title("Seattle street gradients", fontsize=19,
                      fontweight="bold", loc="left", pad=14)
         ax.text(0.0, 1.005, "Maximum sampled gradient per street segment, "
                             "from USGS 3DEP 1 m lidar",

@@ -1,4 +1,4 @@
-/* San Francisco flat routes -- the route page.
+/* Seattle flat routes (a port of Flatten SF) -- the route page.
  *
  * One card: where from, where to, and a slider from the shortest route to
  * the flattest. Everything runs in the page: the graph and the cost model
@@ -69,7 +69,7 @@
   // miles and feet, or kilometres and metres: a preference kept on the device
   const KM = 1000;
   let units = "mi";
-  try { if (localStorage.getItem("flattensf.units") === "km") units = "km"; } catch (e) { /* private mode */ }
+  try { if (localStorage.getItem("flattensea.units") === "km") units = "km"; } catch (e) { /* private mode */ }
   const distNum = (m) => { const v = units === "km" ? m / KM : m / MI; return v < 10 ? v.toFixed(1) : String(Math.round(v)); };
   const distUnit = () => units === "km" ? "km" : "mi";
   const climbNum = (m) => Math.round(units === "km" ? m : m * FT).toLocaleString();
@@ -345,7 +345,7 @@
     buildMap() {
       const map = L.map("map", {
         zoomControl: false, attributionControl: true, preferCanvas: true,
-        center: [37.765, -122.44], zoom: 12, minZoom: 11, maxZoom: 18, zoomSnap: 0.25, zoomAnimationThreshold: 8,
+        center: [47.615, -122.335], zoom: 12, minZoom: 10, maxZoom: 18, zoomSnap: 0.25, zoomAnimationThreshold: 8,
       });
       map.attributionControl.setPrefix("");
       map.attributionControl.addAttribution(
@@ -628,7 +628,7 @@
     /* switch between miles and kilometres and redraw what shows them */
     setUnits(u) {
       units = u;
-      try { localStorage.setItem("flattensf.units", u); } catch (e) { /* private mode */ }
+      try { localStorage.setItem("flattensea.units", u); } catch (e) { /* private mode */ }
       for (const b of $("units").querySelectorAll("button")) b.setAttribute("aria-pressed", b.dataset.u === u ? "true" : "false");
       if (this.state.loop) this.loopSliderRange();
       if (this.family && this.shown) {
@@ -1080,10 +1080,10 @@
         return lerp(pz[j], pz[j + 1], t);
       };
       const esc = (x) => String(x).replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
-      const name = esc(this.gpxName()), desc = esc(distText(s.distance_m) + ", " + climbText(s.elev_gain_m) + " of climbing. Flatten SF, flattensf.com");
+      const name = esc(this.gpxName()), desc = esc(distText(s.distance_m) + ", " + climbText(s.elev_gain_m) + " of climbing. Flatten Seattle, nataliewalls.com/flatsea");
       const out = ['<?xml version="1.0" encoding="UTF-8"?>',
-        '<gpx version="1.1" creator="Flatten SF - flattensf.com" xmlns="http://www.topografix.com/GPX/1/1">',
-        "<metadata><name>" + name + "</name><desc>" + desc + "</desc><link href=\"" + esc(this.shareUrl()) + "\"><text>Flatten SF</text></link></metadata>",
+        '<gpx version="1.1" creator="Flatten Seattle - nataliewalls.com/flatsea" xmlns="http://www.topografix.com/GPX/1/1">',
+        "<metadata><name>" + name + "</name><desc>" + desc + "</desc><link href=\"" + esc(this.shareUrl()) + "\"><text>Flatten Seattle</text></link></metadata>",
         "<trk><name>" + name + "</name><desc>" + desc + "</desc><trkseg>"];
       for (let i = 0; i < pts.length; i++) {
         out.push('<trkpt lat="' + pts[i][0].toFixed(6) + '" lon="' + pts[i][1].toFixed(6) + '"><ele>' + ele(i).toFixed(1) + "</ele></trkpt>");
@@ -1097,7 +1097,7 @@
       const slug = this.gpxName().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
       const blob = new Blob([text], { type: "application/gpx+xml" });
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = "flattensf-" + slug + ".gpx";
+      a.href = URL.createObjectURL(blob); a.download = "flattensea-" + slug + ".gpx";
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     },

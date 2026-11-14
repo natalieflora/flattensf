@@ -32,7 +32,9 @@ redistributed by this project carries its own terms:
     interactive HTML map -- carries ODbL share-alike obligations.
   * Elevation data is USGS 3DEP, a work of the U.S. Government in the public
     domain.
-  * San Francisco neighborhood boundaries are open data published by the
-    City & County of San Francisco.
+  * Seattle neighborhood boundaries are open data published by the City of
+    Seattle, via Code for America's click_that_hood mirror. (Upstream used
+    San Francisco neighborhood boundaries from the City & County of San
+    Francisco.)
   * sf_flat_routes/vendor/ contains Leaflet 1.9.4, (c) Vladimir Agafonkin and
     CloudMade, licensed BSD-2-Clause.

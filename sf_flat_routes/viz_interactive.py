@@ -135,16 +135,16 @@ def build_layers(ctx, corridors, passes, barriers, basins):
 #: without anyone having to know which neighborhoods to pick. Notes are
 #: filled in from the analysis outputs at build time.
 _EXAMPLE_PAIRS = (
-    ("Mission", "Outer Sunset", "walk", "min_climb",
-     "crossing the city east to west"),
-    ("Noe Valley", "Financial District", "walk", "min_climb",
-     "almost all the climbing is optional"),
-    ("Bayview", "Golden Gate Park", "walk", "min_climb",
-     "the biggest single saving in the city"),
-    ("Mission", "Marina", "bike", "balanced",
-     "by bicycle, over the northern saddles"),
-    ("West of Twin Peaks", "Downtown/Civic Center", "walk", "grade_averse",
-     "behind the Twin Peaks barrier: no cheap way over"),
+    ("Adams", "Lower Queen Anne", "walk", "min_climb",
+     "Ballard to Seattle Center, around Queen Anne Hill"),
+    ("Broadway", "Pike-Market", "walk", "min_climb",
+     "Capitol Hill to Pike Place Market"),
+    ("Fremont", "Central Business District", "bike", "balanced",
+     "by bicycle from Fremont to downtown"),
+    ("University District", "Broadway", "bike", "balanced",
+     "the U District to Capitol Hill by bicycle"),
+    ("North Admiral", "Central Business District", "bike", "balanced",
+     "West Seattle to downtown by bicycle"),
 )
 
 
@@ -215,9 +215,9 @@ def _route_page_html(payload: dict, linked: bool, assets: dict | None = None) ->
             '<link rel="icon" href="favicon.svg" type="image/svg+xml">',
             '<meta property="og:type" content="website">',
             f'<meta property="og:title" content="{PRODUCT_NAME}">',
-            '<meta property="og:site_name" content="Flatten SF">',
+            f'<meta property="og:site_name" content="{PRODUCT_NAME}">',
             '<meta property="og:description" content="The flattest walking or '
-            'cycling route between any two places in San Francisco, and every '
+            'cycling route between any two places in Seattle, and every '
             'route between it and the shortest one.">',
             f'<meta property="og:url" content="{SITE_URL}">',
             f'<meta property="og:image" content="{SITE_URL}preview.jpg">',
@@ -225,12 +225,12 @@ def _route_page_html(payload: dict, linked: bool, assets: dict | None = None) ->
             '<meta property="og:image:type" content="image/jpeg">',
             '<meta property="og:image:width" content="1200">',
             '<meta property="og:image:height" content="630">',
-            '<meta property="og:image:alt" content="A map of San Francisco with a fan of '
-            'walking routes between Trick Dog and the dragon in Golden Gate Park">',
+            '<meta property="og:image:alt" content="A map of Seattle with a fan of '
+            'walking routes between the Ballard Locks and the Space Needle">',
             '<meta name="twitter:card" content="summary_large_image">',
             f'<meta name="twitter:title" content="{PRODUCT_NAME}">',
             '<meta name="twitter:description" content="The flattest walking or cycling '
-            'route between any two places in San Francisco, and every route between '
+            'route between any two places in Seattle, and every route between '
             'it and the shortest one.">',
             f'<meta name="twitter:image" content="{SITE_URL}preview.jpg">',
             f'<link rel="preload" href="{payload["bundle_url"]}" as="fetch" crossorigin>',
@@ -252,19 +252,15 @@ _FAVICON = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
 """
 
 
-#: Where the route page opens before anyone types: Trick Dog, in the
-#: Mission, to Naga & the Captainess, the 100-foot sea-serpent sculpture in
-#: the Rainbow Falls pond on JFK Promenade in Golden Gate Park. Chosen by
-#: scoring every pair of well-known Mission bars and Golden Gate Park spots
-#: on the frontier search: the shortest path climbs over the Castro and
-#: Buena Vista hills, the flattest saves about half the climbing for 10%
-#: more distance, and the frontier holds some eighty distinct routes.
+#: Where the route page opens before anyone types: the Ballard Locks to the
+#: Space Needle. The shortest way climbs over Magnolia or Queen Anne; the
+#: flat ones go round by Interbay and the waterfront.
 #: Each entry is (label, place names to try in order, fallback), where the
 #: fallback is a neighborhood access point or a (lon, lat) pair for a spot
 #: the index does not carry.
 _DEFAULT_TRIP = (
-    ("Trick Dog", ("Trick Dog",), "Mission"),
-    ("The Dragon, Golden Gate Park", (), (-122.4779, 37.7716)),
+    ("Ballard Locks", ("Hiram M. Chittenden Locks", "Ballard Locks"), (-122.3976, 47.6654)),
+    ("Space Needle", ("Space Needle",), (-122.3493, 47.6205)),
 )
 
 
@@ -384,9 +380,8 @@ def _write_route_page(ctx, graph: dict, pts: dict) -> Path:
         (SITE_DIR / plain).unlink(missing_ok=True)
     (SITE_DIR / "favicon.svg").write_text(_FAVICON, encoding="utf-8")
     (SITE_DIR / ".nojekyll").write_text("", encoding="utf-8")
-    # GitHub Pages reads the custom domain from here on branch deploys and
-    # from Settings -> Pages on Actions deploys; shipping it covers both
-    (SITE_DIR / "CNAME").write_text(SITE_DOMAIN + "\n", encoding="utf-8")
+    # Served under a path on nataliewalls.com, so no CNAME file.
+    (SITE_DIR / "CNAME").unlink(missing_ok=True)
     site_bytes = sum(f.stat().st_size for f in SITE_DIR.rglob("*") if f.is_file())
     log.info("wrote %s (%s) and the site in %s (%s)", SIMPLE_HTML.name,
              human_bytes(SIMPLE_HTML.stat().st_size), SITE_DIR.name, human_bytes(site_bytes))
