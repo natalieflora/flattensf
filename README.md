@@ -87,7 +87,9 @@ Everything in the upstream "Limitations" section applies. In addition:
 
 - **Bike facilities are matched by shape, not by id.** SDOT's segments are
   snapped to the Overture street graph geometrically (within 12 m and 25
-  degrees over at least half an edge), as upstream does for SFMTA. A
+  degrees over at least half an edge), as upstream does for SFMTA, and only
+  onto edges of a fitting kind: a painted lane never lands on the sidewalk
+  beside it, and a trail never lends its rating to the road next to it. A
   climbing lane (bike lane uphill, sharrows downhill) counts as a lane in
   both directions.
 - **Neighborhood boundaries are an older mirror** of Seattle's neighborhood
