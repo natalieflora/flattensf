@@ -1,0 +1,82 @@
+# Keep the cached copy of SDOT's Existing Bike Facilities current.
+#
+# The route finder's bike comfort weighting reads
+# data/sources/seattle_bike_facilities.geojson. The City's feature service is
+# not reachable from every build environment, so the file is committed and
+# refreshed here:
+#   - monthly (and on demand), opening a pull request when SDOT changed
+#     something. Scheduled runs only happen on the repository's default branch.
+#   - whenever the fetch script or this workflow changes on a branch, committing
+#     the refreshed file to that same branch.
+# Rebuilding site/ with the new data is still a manual pipeline run.
+name: Refresh Seattle bike facilities
+
+on:
+  schedule:
+    - cron: "23 10 2 * *"   # 02:23 Pacific on the 2nd of each month
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/fetch_seattle_bikeways.py
+      - .github/workflows/refresh-bikeways.yml
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: refresh-bikeways-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch SDOT Existing Bike Facilities
+        run: python scripts/fetch_seattle_bikeways.py
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet -- data/sources/seattle_bike_facilities.geojson \
+             && git ls-files --error-unmatch data/sources/seattle_bike_facilities.geojson >/dev/null 2>&1; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No change in SDOT bike facilities."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit to this branch
+        if: steps.diff.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/sources/seattle_bike_facilities.geojson
+          git commit -m "Refresh SDOT bike facilities ($(date -u +%Y-%m-%d))"
+          git push
+
+      - name: Open a pull request
+        if: steps.diff.outputs.changed == 'true' && github.event_name != 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.ref_name }}
+        run: |
+          day=$(date -u +%Y-%m-%d)
+          branch="bikeways-refresh/$day"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add data/sources/seattle_bike_facilities.geojson
+          git commit -m "Refresh SDOT bike facilities ($day)"
+          git push -u origin "$branch"
+          gh pr create --base "$BASE" --head "$branch" \
+            --title "Refresh SDOT bike facilities ($day)" \
+            --body "SDOT's Existing Bike Facilities layer changed since the last refresh. After merging, rebuild site/ with the pipeline so the route finder picks it up." \
+          || echo "::warning::Could not open a pull request (Settings > Actions > General > 'Allow GitHub Actions to create and approve pull requests' may be off). The refreshed file is on branch $branch."

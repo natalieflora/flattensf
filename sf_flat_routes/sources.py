@@ -213,16 +213,23 @@ DATASETS: tuple[Dataset, ...] = (
     ),
     Dataset(
         key="bike_network",
-        title="City bikeway layer (not used in the Seattle port)",
-        publisher="SDOT via data.seattle.gov",
-        url="https://data.seattle.gov/",
-        accessed="not fetched: data.seattle.gov is blocked from the build environment",
-        resolution="n/a",
-        licence="Open data (City of Seattle)",
-        role="Would drive bike-mode comfort weighting; without it bike mode "
-             "falls back to road class and OSM cycleway tags.",
-        local="data/raw/sfmta_bike_network.geojson",
-        limitations="Absent, so bike comfort weighting uses road class only.",
+        title="SDOT Existing Bike Facilities",
+        publisher="City of Seattle, Seattle Department of Transportation",
+        url="https://services.arcgis.com/ZOyb2t4B0UYuYNYH/arcgis/rest/services/"
+            "SDOT_Bike_Facilities/FeatureServer/2",
+        accessed="fetched by scripts/fetch_seattle_bikeways.py; refreshed monthly "
+                 "by .github/workflows/refresh-bikeways.yml (see git log)",
+        resolution="About 3,700 block-length centreline segments: off-street "
+                   "trails, protected, buffered, painted and climbing lanes, "
+                   "neighborhood greenways, sharrows",
+        licence="City of Seattle Open Data (no restrictions on use)",
+        role="Route finder: bike comfort weighting for 'prefer calm streets' "
+             "(bikeways.py).",
+        local="data/sources/seattle_bike_facilities.geojson",
+        limitations="Matched to the Overture graph geometrically (12 m, 25 deg). "
+                    "Climbing lanes (uphill lane, downhill sharrows) count as a "
+                    "lane in both directions. Segments under construction are "
+                    "left out.",
         optional=True,
     ),
 )
