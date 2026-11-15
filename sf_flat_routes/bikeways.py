@@ -56,6 +56,25 @@ SAMPLE_M = 10.0
 FACILITIES = ("", "route", "neighborway", "lane", "buffered_lane", "separated", "path")
 _RANK = {f: i for i, f in enumerate(FACILITIES)}
 
+#: Which facilities an edge may take, by its road class.  Without this a
+#: lane on a street also lands on the sidewalks drawn a few metres either
+#: side of it (Seattle's OSM sidewalks are mapped as separate footways),
+#: making them look like protected lanes; and a trail beside a road lends
+#: the road its rating.  Off-street trails go only on off-street edges,
+#: painted lanes, greenways and sharrows only on streets, and a protected
+#: lane on either (OSM maps many as their own cycleway).  Classes not
+#: listed take any facility.
+_OFF_STREET = frozenset({"path", "separated"})
+_ON_STREET = frozenset({"separated", "buffered_lane", "lane", "neighborway", "route"})
+CLASS_FACILITIES = {
+    "cycleway": _OFF_STREET, "path": _OFF_STREET, "track": _OFF_STREET,
+    "footway": frozenset({"path"}), "pedestrian": frozenset({"path"}),
+    "steps": frozenset(), "bridleway": frozenset(),
+    **{c: _ON_STREET for c in ("motorway", "trunk", "primary", "secondary",
+                               "tertiary", "residential", "unclassified",
+                               "living_street", "service")},
+}
+
 #: comfort multiplier by road class when there is no bikeway on the street
 CLASS_STRESS = {
     "cycleway": 0.8, "living_street": 0.9, "path": 1.0, "residential": 1.0,
@@ -162,11 +181,13 @@ def conflate(edges: gpd.GeoDataFrame, bikeways: gpd.GeoDataFrame | None = None) 
     out = np.full(len(edges), "", dtype=object)
     cand = edges.index[edges["bike_ok"].fillna(False).astype(bool)] \
         if "bike_ok" in edges else edges.index
+    edge_cls = edges["cls"] if "cls" in edges else pd.Series(None, index=edges.index)
     with step(f"conflating {len(pieces)} bikeway pieces onto {len(cand)} edges", log):
         for i in cand:
             geom = edges.geometry.loc[i]
             if geom is None or geom.is_empty or geom.length < 1.0:
                 continue
+            allowed = CLASS_FACILITIES.get(edge_cls.loc[i])
             xy, br = _sample(geom, SAMPLE_M)
             from shapely.geometry import Point
             pts = [Point(x, y) for x, y in xy]
@@ -174,6 +195,8 @@ def conflate(edges: gpd.GeoDataFrame, bikeways: gpd.GeoDataFrame | None = None) 
             for k, p in enumerate(pts):
                 best = -1
                 for j in tree.query(p.buffer(MATCH_M)):
+                    if allowed is not None and piece_fac[j] not in allowed:
+                        continue
                     if pieces[j].distance(p) > MATCH_M:
                         continue
                     da = abs((piece_br[j] - br[k] + np.pi / 2) % np.pi - np.pi / 2)

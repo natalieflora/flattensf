@@ -110,6 +110,25 @@ def test_conflation_takes_the_most_protected_overlapping_facility():
     assert list(bikeways.conflate(edges, bw)) == ["separated"]
 
 
+def test_conflation_keeps_lanes_off_sidewalks_and_trails_off_roads():
+    # a street with a painted lane, a sidewalk 8 m to its side, and a trail
+    # running alongside 9 m the other way
+    edges = gpd.GeoDataFrame({
+        "cls": ["secondary", "footway", "cycleway", "secondary"],
+        "bike_ok": [True] * 4,
+        "geometry": [LineString([(0, 0), (100, 0)]), LineString([(0, 8), (100, 8)]),
+                     LineString([(0, -9), (100, -9)]), LineString([(200, 0), (300, 0)])],
+    }, crs="EPSG:26910")
+    bw = gpd.GeoDataFrame({
+        "facility": ["lane", "path", "separated"], "street": ["A", "trail", "B"],
+        "geometry": [LineString([(0, 0), (100, 0)]), LineString([(0, -9), (100, -9)]),
+                     LineString([(200, 4), (300, 4)])],
+    }, crs="EPSG:26910")
+    # the street keeps its lane (not the trail), the sidewalk gets nothing,
+    # the trail edge gets the trail, and a protected lane lands on a street
+    assert list(bikeways.conflate(edges, bw)) == ["lane", "", "path", "separated"]
+
+
 needs_data = pytest.mark.skipif(not bikeways.BIKEWAYS_GEOJSON.exists(),
                                 reason="Seattle bikeway GeoJSON not fetched")
 
